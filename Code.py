@@ -28,10 +28,12 @@ dfDez1981 = dfDez[pd.to_datetime(df['Datum']).dt.year == 1981]
 
 print(dfDez1981)
 
-dfSnowDezperYearSum.plot()
+# dfSnowDezperYearSum.plot()
 # dfSnowDezperYearCount.plot()
 # dfDez2017["Gesamtschneehöhe"].hist()
+dfDez2017["Lufttemperatur Tagesmittel"].hist()
 # dfDez1981["Gesamtschneehöhe"].hist()
+# dfDez1981["Lufttemperatur Tagesmittel"].hist()
 # dfSnow.plot.scatter(x='SchneenächsterTag',y='Niederschlag', c = "Lufttemperatur Tagesmittel", cmap="viridis")
 # dfSnow.plot.scatter(x='SchneenächsterTag',y='Niederschlag', c = "Lufttemperatur Tagesminimum")
 # dfSnow["Lufttemperatur Tagesmittel"].hist(bins = 40)
