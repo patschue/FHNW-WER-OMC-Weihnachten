@@ -44,16 +44,16 @@ dfSnow = dfSnow.replace("-", np.nan)
 
 Ten2010 = dfDez[(pd.to_datetime(dfDez['Datum']).dt.year >= 2010) & (pd.to_datetime(dfDez['Datum']).dt.year <= 2019)]
 # Ten2010 = Ten2010.groupby([pd.to_datetime(Ten2010['Datum']).dt.day]).agg({"Lufttemperatur Tagesminimum":"mean", "Niederschlag": "mean"})
-# Ten2010.hist()
+Ten2010.hist("Lufttemperatur Tagesminimum")
 meanTempTen2010 = np.mean(Ten2010["Lufttemperatur Tagesminimum"])
 stdTempTen2010 = np.std(Ten2010["Lufttemperatur Tagesminimum"])
 Ten2010norm = norm(meanTempTen2010, stdTempTen2010)
-print("Wahrscheinlichkeit Min. Temperatur unter 0.5 Grad während 10 Jahren ab 2010:", round(Ten2010norm.cdf(0.5), 4) * 100)
+print("Wahrscheinlichkeit Min. Temperatur unter 2.0 Grad während 10 Jahren ab 2010:", round(Ten2010norm.cdf(2.0), 4) * 100)
 
 Ten1870 = dfDez[(pd.to_datetime(dfDez['Datum']).dt.year >= 1870) & (pd.to_datetime(dfDez['Datum']).dt.year <= 1879)]
 # Ten1870 = Ten1870.groupby([pd.to_datetime(Ten1870['Datum']).dt.day]).agg({"Lufttemperatur Tagesminimum":"mean", "Niederschlag": "mean"})
-Ten1870.hist("Niederschlag")
+Ten1870.hist("Lufttemperatur Tagesminimum")
 meanTempTen1870 = np.mean(Ten1870["Lufttemperatur Tagesminimum"])
 stdTempTen1870 = np.std(Ten1870["Lufttemperatur Tagesminimum"])
 Ten1870norm = norm(meanTempTen1870, stdTempTen1870)
-print("Wahrscheinlichkeit Min. Temperatur unter 0.5 Grad während 10 Jahren ab 1870:", round(Ten1870norm.cdf(0.5), 4) * 100)
+print("Wahrscheinlichkeit Min. Temperatur unter 2.0 Grad während 10 Jahren ab 1870:", round(Ten1870norm.cdf(2.0), 4) * 100)

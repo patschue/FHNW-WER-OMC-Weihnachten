@@ -4,4 +4,4 @@ To-Do-Basics: 	Korrekte Verteilungen für Niederschlag und Temp finden (Funktion
 To-Do-Advanced:	Überprüfen, für welche Zeitperioden genügende valide Daten vorhanden sind.
 		Schlaufe, um mehrere Zeitperioden zu analysieren, evtl. mit Grafik mit Verlauf der Wahrscheinlichkeit
 
-Rocco fragen:	Vorgehensweise korrekt? Ideensuche, welche zusätzlichen Variablen wir verwenden könnten.
+Rocco fragen:	Vorgehensweise korrekt? Ideensuche, welche zusätzlichen Variablen wir verwenden könnten. Soll Verteilung für jede 10j-Periode neu bestimmt werden?
