@@ -47,88 +47,100 @@ dfDez = dfDez[['Datum','Gesamtschneehöhe','SchneeTagesDifferenz','Niederschlag'
 
 
 # Loop for each decade
-for decade in range(2000,2020,10):
+# Funktion kann wieder aufgelöst werden, ich habe sie erstellt, damit die Rechnungen nicht jedesmal laufen
+def LoopDecade():
+    for decade in range(2000,2020,10):
+        
+        #Define Decade Start and End Year
+        startYear = decade
+        endYear = decade +9
+        print(str(startYear) + " - " + str(endYear))
+        
+        
+        dfDezDecade = dfDez[(pd.to_datetime(dfDez['Datum']).dt.year >= startYear) & (pd.to_datetime(dfDez['Datum']).dt.year <= endYear)]
     
-    #Define Decade Start and End Year
-    startYear = decade
-    endYear = decade +9
-    print(str(startYear) + " - " + str(endYear))
-    
-    
-    dfDezDecade = dfDez[(pd.to_datetime(dfDez['Datum']).dt.year >= startYear) & (pd.to_datetime(dfDez['Datum']).dt.year <= endYear)]
-
-    #Get Subsets of each Decade 
-    dfDezDecadeNoPrecipation= dfDezDecade[(dfDezDecade['Niederschlag'] == 0)]
-    #Remove Precipation < 2 weil 2mm quasi kein Niederschlag ist (to be discussed)
-    dfDezDecadeWithPrecipation=  dfDezDecade[(dfDezDecade['Niederschlag'] > 2.0)]
-
-
-
-
-    ### Probability that Precipation occurs ##
-
-    # Probability for Precipation in decades December (PrecipationDays / All Days)
-    p = dfDezDecadeWithPrecipation.shape[0] / (dfDezDecadeWithPrecipation.shape[0] + dfDezDecadeNoPrecipation.shape[0])
-    
-    #Generieren von 31 Tagen mit der Bernoulli Probability (simulierter Dezember)
-    bernoullidaysperdecade = stats.bernoulli.rvs(p, size=31)
-    
-    #selektion von tagen mit precipation
-    DaysPrecipationperYear = bernoullidaysperdecade[bernoullidaysperdecade==1].shape[0]
-    
-    
-    ### Simulation of Precipation precipitation quantity ###
-    
-    #Plot the decade
-    dfDezDecadeWithPrecipation.hist("Niederschlag")
-    plt.suptitle('Niederschlag ' + str(startYear) + "-" +str(endYear))
-    #Fit Distribution
-    print("Niederschlag Verteilung"+ str(startYear) + "-" +str(endYear))
-    distributionYearPrecipation = d.FindmostfittingDistribution(dfDezDecadeWithPrecipation['Niederschlag'])
-    
-
-  
-    #Sample generation for quantity of Precipation on days with Precipation (PrecipationDaysDecade / 10 (years) = mean Precipation days for a year in the decade)
-    explambda = mean(dfDezDecadeWithPrecipation['Niederschlag'])
-    sample = exponential(explambda, DaysPrecipationperYear)
-    print(sample)
+        #Get Subsets of each Decade 
+        dfDezDecadeNoPrecipation= dfDezDecade[(dfDezDecade['Niederschlag'] == 0)]
+        #Remove Precipation < 2 weil 2mm quasi kein Niederschlag ist (to be discussed)
+        dfDezDecadeWithPrecipation=  dfDezDecade[(dfDezDecade['Niederschlag'] > 2.0)]
     
     
     
     
-    ### Snow height and Differences
-    dfDezDecade.hist("Gesamtschneehöhe")
-    plt.suptitle('Gesamtschneehöhe ' + str(startYear) + "-" +str(endYear))
-    dfDezDecade.hist("SchneeTagesDifferenz")
-    plt.suptitle('SchneeTagesDifferenz ' + str(startYear) + "-" +str(endYear))
+        ### Probability that Precipation occurs ##
+    
+        # Probability for Precipation in decades December (PrecipationDays / All Days)
+        p = dfDezDecadeWithPrecipation.shape[0] / (dfDezDecadeWithPrecipation.shape[0] + dfDezDecadeNoPrecipation.shape[0])
+        
+        #Generieren von 31 Tagen mit der Bernoulli Probability (simulierter Dezember)
+        bernoullidaysperdecade = stats.bernoulli.rvs(p, size=31)
+        
+        #selektion von tagen mit precipation
+        DaysPrecipationperYear = bernoullidaysperdecade[bernoullidaysperdecade==1].shape[0]
+        
+        
+        ### Simulation of Precipation precipitation quantity ###
+        
+        #Plot the decade
+        dfDezDecadeWithPrecipation.hist("Niederschlag")
+        plt.suptitle('Niederschlag ' + str(startYear) + "-" +str(endYear))
+        #Fit Distribution
+        print("Niederschlag Verteilung"+ str(startYear) + "-" +str(endYear))
+        distributionYearPrecipation = d.FindmostfittingDistribution(dfDezDecadeWithPrecipation['Niederschlag'])
+        
+    
+      
+        #Sample generation for quantity of Precipation on days with Precipation (PrecipationDaysDecade / 10 (years) = mean Precipation days for a year in the decade)
+        explambda = mean(dfDezDecadeWithPrecipation['Niederschlag'])
+        sample = exponential(explambda, DaysPrecipationperYear)
+        print(sample)
+        
+        
+        
+        
+        ### Snow height and Differences
+        dfDezDecade.hist("Gesamtschneehöhe")
+        plt.suptitle('Gesamtschneehöhe ' + str(startYear) + "-" +str(endYear))
+        dfDezDecade.hist("SchneeTagesDifferenz")
+        plt.suptitle('SchneeTagesDifferenz ' + str(startYear) + "-" +str(endYear))
+        
+        
+        ### Fitting 
+        print("Temperatur Verteilung"+ str(startYear) + "-" +str(endYear))
+        distributionDecadeTemperature = d.FindmostfittingDistribution(dfDezDecade['Lufttemperatur Tagesmittel'])
+        
+        
+        
+        ### Mean Temperatur per Decade and Probability of changing temp
+        meanTempDecade = np.mean(dfDezDecade["Lufttemperatur Tagesminimum"])
+        stdTempDecade = np.std(dfDezDecade["Lufttemperatur Tagesminimum"])
+        TenDecadenorm = norm(meanTempDecade, stdTempDecade)
+        
+        ProbabilitySnow = round(TenDecadenorm.cdf(samplingTemperature), 4)
+        print("Wahrscheinlichkeit Min. Temperatur unter "+ str(samplingTemperature) +" Grad während 10 Jahren ab "+ str(startYear) +":", ProbabilitySnow)
+        
+        print(DaysPrecipationperYear)
+        print((p*ProbabilitySnow) /ProbabilitySnow)
+        #print(((DaysPrecipationperYear/31)*ProbabilitySnow) /ProbabilitySnow)
+        
+        
+        
+        
+        ### BodenTemperatur Voraussetzung Lin Regression
     
     
-    ### Fitting 
-    print("Temperatur Verteilung"+ str(startYear) + "-" +str(endYear))
-    distributionDecadeTemperature = d.FindmostfittingDistribution(dfDezDecade['Lufttemperatur Tagesmittel'])
-    
-    
-    
-    ### Mean Temperatur per Decade and Probability of changing temp
-    meanTempDecade = np.mean(dfDezDecade["Lufttemperatur Tagesminimum"])
-    stdTempDecade = np.std(dfDezDecade["Lufttemperatur Tagesminimum"])
-    TenDecadenorm = norm(meanTempDecade, stdTempDecade)
-    
-    ProbabilitySnow = round(TenDecadenorm.cdf(samplingTemperature), 4)
-    print("Wahrscheinlichkeit Min. Temperatur unter "+ str(samplingTemperature) +" Grad während 10 Jahren ab "+ str(startYear) +":", ProbabilitySnow)
-    
-    print(DaysPrecipationperYear)
-    print((p*ProbabilitySnow) /ProbabilitySnow)
-    #print(((DaysPrecipationperYear/31)*ProbabilitySnow) /ProbabilitySnow)
-    
-    
-    
-    
-    ### BodenTemperatur Voraussetzung Lin Regression
-    
-    
-    
-    
+# https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.linregress.html
+linregress_x = dfDez["Lufttemperatur Tagesminimum"]
+# linregress_x = df["Lufttemperatur Tagesminimum"]
+linregress_y = dfDez['Niederschlag']
+# linregress_y = df['Niederschlag']
+slope, intercept, r_value, p_value, std_err = stats.linregress(linregress_x, linregress_y)
+print("Die Korrelation beträgt:", round(r_value, 3), " und R^2 beträgt:", round(r_value ** 2, 3))
+print("Die Variablen haben also keinen statistischen Zusammenhang.")
+plt.plot(linregress_x, linregress_y, 'o', label='original data')
+plt.plot(linregress_x, intercept + slope*linregress_x, 'r', label='fitted line')
+plt.legend()
+plt.show()
     
     
     
