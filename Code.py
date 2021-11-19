@@ -9,7 +9,7 @@ import pandas as pd
 import numpy as np
 from scipy.stats import norm
 
-df = pd.read_csv(r"C:\Users\schue\Documents\Github\FHNW-WER-Wetter\TäglicheDaten.csv", sep=";")
+df = pd.read_csv("TäglicheDaten.csv", sep=";")
 df["Gesamtschneehöhe"] = df["Gesamtschneehöhe"].replace('-', 0)
 df["Gesamtschneehöhe"] = pd.to_numeric(df["Gesamtschneehöhe"])
 df["Lufttemperatur Tagesminimum"] = df["Lufttemperatur Tagesminimum"].replace('-', 0)
@@ -44,7 +44,7 @@ dfSnow = dfSnow.replace("-", np.nan)
 
 Ten2010 = dfDez[(pd.to_datetime(dfDez['Datum']).dt.year >= 2010) & (pd.to_datetime(dfDez['Datum']).dt.year <= 2019)]
 # Ten2010 = Ten2010.groupby([pd.to_datetime(Ten2010['Datum']).dt.day]).agg({"Lufttemperatur Tagesminimum":"mean", "Niederschlag": "mean"})
-Ten2010.hist("Lufttemperatur Tagesminimum")
+Ten2010.hist("Niederschlag")
 meanTempTen2010 = np.mean(Ten2010["Lufttemperatur Tagesminimum"])
 stdTempTen2010 = np.std(Ten2010["Lufttemperatur Tagesminimum"])
 Ten2010norm = norm(meanTempTen2010, stdTempTen2010)
@@ -52,7 +52,7 @@ print("Wahrscheinlichkeit Min. Temperatur unter 2.0 Grad während 10 Jahren ab 2
 
 Ten1870 = dfDez[(pd.to_datetime(dfDez['Datum']).dt.year >= 1870) & (pd.to_datetime(dfDez['Datum']).dt.year <= 1879)]
 # Ten1870 = Ten1870.groupby([pd.to_datetime(Ten1870['Datum']).dt.day]).agg({"Lufttemperatur Tagesminimum":"mean", "Niederschlag": "mean"})
-Ten1870.hist("Lufttemperatur Tagesminimum")
+Ten1870.hist("Niederschlag")
 meanTempTen1870 = np.mean(Ten1870["Lufttemperatur Tagesminimum"])
 stdTempTen1870 = np.std(Ten1870["Lufttemperatur Tagesminimum"])
 Ten1870norm = norm(meanTempTen1870, stdTempTen1870)
