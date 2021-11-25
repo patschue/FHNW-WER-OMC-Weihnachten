@@ -17,8 +17,9 @@ from statistics import mean
 
 ##Global Definitions
 samplingTemperature = 2.0
+TimePeriod = 10
 
-
+dfPropabilitiesSnowPerDecade = pd.DataFrame({'TimePeriod': [],'Year': [],'NProbabilitySnow': [],'YearlyProbabilitySnow': []})
 
 
 # Lesen von CSV daten
@@ -45,6 +46,69 @@ dfDez = df[pd.to_datetime(df['Datum']).dt.month == 12]
 dfDez = dfDez[['Datum','Gesamtschneehöhe','SchneeTagesDifferenz','Niederschlag','Lufttemperatur Tagesmittel','Lufttemperatur Tagesminimum','Lufttemperatur Tagesmaximum']]
 
 
+def LoopTimePeriod():
+    for timeperiod in range(1900,2020,TimePeriod):
+       
+        #Define TimePeriod Start and End Year
+        startYear = timeperiod
+        endYear = timeperiod +TimePeriod
+        print(str(startYear) + " - " + str(endYear))
+        
+        for year in range(startYear,endYear):
+            print(year)
+            #dfDezYear = dfDez[(pd.to_datetime(dfDez['Datum']).dt.year >= year) & (pd.to_datetime(dfDez['Datum']).dt.year <= year)]
+            dfDezYear = dfDez[(pd.to_datetime(dfDez['Datum']).dt.year == year)]
+            print(dfDezYear)
+            
+            #Get Year of each TimePeriod 
+            dfDezYearNoPrecipation= dfDezYear[(dfDezYear['Niederschlag'] == 0)]
+            #Remove Precipation < 2 weil 2mm quasi kein Niederschlag ist (to be discussed)
+            dfDezYearWithPrecipation=  dfDezYear[(dfDezYear['Niederschlag'] > 2.0)]
+            
+            # Probability for Precipation in Year December (PrecipationDays / All Days)
+            pYear = dfDezYearWithPrecipation.shape[0] / (dfDezYearWithPrecipation.shape[0] + dfDezYearNoPrecipation.shape[0])
+            
+            ### Mean Temperatur per Year and Probability of changing temp
+            meanTempYear = np.mean(dfDezYear["Lufttemperatur Tagesmittel"])
+            stdTempYear = np.std(dfDezYear["Lufttemperatur Tagesmittel"])
+            Yearnorm = norm(meanTempYear, stdTempYear)
+            
+            TempYearbeneathSamplingTemp = round(Yearnorm.cdf(samplingTemperature), 4)
+            YearProbabilitySnow =(pYear * TempYearbeneathSamplingTemp) /TempYearbeneathSamplingTemp
+                       
+            dfPropabilitiesSnowPerDecade.loc[len(dfPropabilitiesSnowPerDecade.index)] = [timeperiod,year, len(dfDezYear),YearProbabilitySnow]
+    
+    a = dfPropabilitiesSnowPerDecade[(dfPropabilitiesSnowPerDecade['TimePeriod'] == 1900)]
+    b = dfPropabilitiesSnowPerDecade[(dfPropabilitiesSnowPerDecade['TimePeriod'] == 2000)]
+
+    return stats.ttest_ind(a['YearlyProbabilitySnow'], b['YearlyProbabilitySnow'],nan_policy="omit")
+
+TTestResults= LoopTimePeriod()
+
+
+    
+    
+# https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.linregress.html
+linregress_x = dfDez["Lufttemperatur Tagesminimum"]
+# linregress_x = df["Lufttemperatur Tagesminimum"]
+linregress_y = dfDez['Niederschlag']
+# linregress_y = df['Niederschlag']
+slope, intercept, r_value, p_value, std_err = stats.linregress(linregress_x, linregress_y)
+print("Die Korrelation beträgt:", round(r_value, 3), " und R^2 beträgt:", round(r_value ** 2, 3))
+print("Die Variablen haben also keinen statistischen Zusammenhang.")
+plt.plot(linregress_x, linregress_y, 'o', label='original data')
+plt.plot(linregress_x, intercept + slope*linregress_x, 'r', label='fitted line')
+plt.legend()
+plt.show()
+    
+    
+    
+
+dfSnowDezperYearSum = dfDez['Gesamtschneehöhe'].groupby(dfDez['Datum'].dt.year).sum()
+dfSnowDezperYearCount = dfDez['Gesamtschneehöhe'].groupby(dfDez['Datum'].dt.year).agg(pos=lambda ts: (ts > 0).sum()) 
+dfSnow = df.loc[df['SchneeTagesDifferenz'] > 0]
+dfSnow = dfSnow.replace("-", np.nan)
+dfSnowDez = dfSnow[pd.to_datetime(dfSnow['Datum']).dt.month == 12]
 
 # Loop for each decade
 # Funktion kann wieder aufgelöst werden, ich habe sie erstellt, damit die Rechnungen nicht jedesmal laufen
@@ -127,29 +191,7 @@ def LoopDecade():
         
         
         ### BodenTemperatur Voraussetzung Lin Regression
-    
-    
-# https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.linregress.html
-linregress_x = dfDez["Lufttemperatur Tagesminimum"]
-# linregress_x = df["Lufttemperatur Tagesminimum"]
-linregress_y = dfDez['Niederschlag']
-# linregress_y = df['Niederschlag']
-slope, intercept, r_value, p_value, std_err = stats.linregress(linregress_x, linregress_y)
-print("Die Korrelation beträgt:", round(r_value, 3), " und R^2 beträgt:", round(r_value ** 2, 3))
-print("Die Variablen haben also keinen statistischen Zusammenhang.")
-plt.plot(linregress_x, linregress_y, 'o', label='original data')
-plt.plot(linregress_x, intercept + slope*linregress_x, 'r', label='fitted line')
-plt.legend()
-plt.show()
-    
-    
-    
 
-dfSnowDezperYearSum = dfDez['Gesamtschneehöhe'].groupby(dfDez['Datum'].dt.year).sum()
-dfSnowDezperYearCount = dfDez['Gesamtschneehöhe'].groupby(dfDez['Datum'].dt.year).agg(pos=lambda ts: (ts > 0).sum()) 
-dfSnow = df.loc[df['SchneeTagesDifferenz'] > 0]
-dfSnow = dfSnow.replace("-", np.nan)
-dfSnowDez = dfSnow[pd.to_datetime(dfSnow['Datum']).dt.month == 12]
 
 
 # dfDez2017 = dfDez[pd.to_datetime(df['Datum']).dt.year == 2017]
