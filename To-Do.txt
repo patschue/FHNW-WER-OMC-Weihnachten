@@ -1,5 +1,5 @@
 To-Do-Basics: 	Korrekte Verteilungen für Niederschlag und Temp finden (Funktion von Steinschlag)
-		Wahrscheinlichkeit für Niederschlag und Methode finden, um Wahrsch. Temp und Niederschlag zu kombinieren. (Normale bedingte Wahrschn.?)
+		Erledigt: Wahrscheinlichkeit für Niederschlag und Methode finden, um Wahrsch. Temp und Niederschlag zu kombinieren. (Normale bedingte Wahrschn.?)
 
 To-Do-Advanced:	Überprüfen, für welche Zeitperioden genügende valide Daten vorhanden sind.
 		Schlaufe, um mehrere Zeitperioden zu analysieren, evtl. mit Grafik mit Verlauf der Wahrscheinlichkeit

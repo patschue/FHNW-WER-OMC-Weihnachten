@@ -38,12 +38,27 @@ df["Datum"] = pd.to_datetime(df["date"], format='%Y%m%d')
 
 #Berechnung Schneehöhe gestern - Schneehöhe heute = Differenz eines Tages
 df["SchneeTagesDifferenz"]= df['Gesamtschneehöhe'].shift(-1) - df['Gesamtschneehöhe']
+df["SchneeVorVorTagesDifferenz"]= df['SchneeTagesDifferenz'].shift(-1)
 
 #Selektion von Dezember Tagen
 dfDez = df[pd.to_datetime(df['Datum']).dt.month == 12]
 
 #DfDez mit weniger Spalten
-dfDez = dfDez[['Datum','Gesamtschneehöhe','SchneeTagesDifferenz','Niederschlag','Lufttemperatur Tagesmittel','Lufttemperatur Tagesminimum','Lufttemperatur Tagesmaximum']]
+dfDez = dfDez[['Datum','Gesamtschneehöhe','SchneeTagesDifferenz', "SchneeVorVorTagesDifferenz",'Niederschlag','Lufttemperatur Tagesmittel','Lufttemperatur Tagesminimum','Lufttemperatur Tagesmaximum']]
+
+
+def Analyse_1t():
+    dfSnowDez = dfDez.loc[df['SchneeTagesDifferenz'] > 0]
+    dfVorVorSnowDez = dfDez.loc[df['SchneeVorVorTagesDifferenz'] > 0]
+    # dfSnowDez["Lufttemperatur Tagesmittel"].hist(bins = 40)
+    # dfSnowDez["Niederschlag"].hist(bins = 40)
+    dfVorVorSnowDez["Lufttemperatur Tagesmittel"].hist(bins = 40)
+    # dfVorVorSnowDez["Niederschlag"].hist(bins = 40)
+    print("Vortage ohne Niederschlag:", len(dfSnowDez.loc[dfSnowDez['Niederschlag'] == 0]), "Anzahl Schneetage:", len(dfSnowDez))
+    print("Vortage Schnee Durchschnitt Temperatur:", round(dfSnowDez["Lufttemperatur Tagesmittel"].mean(), 2), "Dezember Durchschnitt Temperatur:", round(dfDez["Lufttemperatur Tagesmittel"].mean(), 2))
+    print("Vorvortage ohne Niederschlag:", len(dfVorVorSnowDez.loc[dfVorVorSnowDez['Niederschlag'] == 0]), "Anzahl Schneetage:", len(dfSnowDez))
+    
+Analyse_1t()
 
 
 def LoopTimePeriod():
@@ -55,10 +70,10 @@ def LoopTimePeriod():
         print(str(startYear) + " - " + str(endYear))
         
         for year in range(startYear,endYear):
-            print(year)
+            # print(year)
             #dfDezYear = dfDez[(pd.to_datetime(dfDez['Datum']).dt.year >= year) & (pd.to_datetime(dfDez['Datum']).dt.year <= year)]
             dfDezYear = dfDez[(pd.to_datetime(dfDez['Datum']).dt.year == year)]
-            print(dfDezYear)
+            # print(dfDezYear)
             
             #Get Year of each TimePeriod 
             dfDezYearNoPrecipation= dfDezYear[(dfDezYear['Niederschlag'] == 0)]
@@ -79,29 +94,29 @@ def LoopTimePeriod():
             dfPropabilitiesSnowPerDecade.loc[len(dfPropabilitiesSnowPerDecade.index)] = [timeperiod,year, len(dfDezYear),YearProbabilitySnow]
     
     a = dfPropabilitiesSnowPerDecade[(dfPropabilitiesSnowPerDecade['TimePeriod'] == 1900)]
-    b = dfPropabilitiesSnowPerDecade[(dfPropabilitiesSnowPerDecade['TimePeriod'] == 2000)]
+    b = dfPropabilitiesSnowPerDecade[(dfPropabilitiesSnowPerDecade['TimePeriod'] == 2010)]
 
     return stats.ttest_ind(a['YearlyProbabilitySnow'], b['YearlyProbabilitySnow'],nan_policy="omit")
 
-TTestResults= LoopTimePeriod()
+# TTestResults= LoopTimePeriod()
 
 
     
+def Regressionsanalyse():    
+    # https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.linregress.html
+    linregress_x = dfDez["Lufttemperatur Tagesminimum"]
+    # linregress_x = df["Lufttemperatur Tagesminimum"]
+    linregress_y = dfDez['Niederschlag']
+    # linregress_y = df['Niederschlag']
+    slope, intercept, r_value, p_value, std_err = stats.linregress(linregress_x, linregress_y)
+    print("Die Korrelation beträgt:", round(r_value, 3), " und R^2 beträgt:", round(r_value ** 2, 3))
+    print("Die Variablen haben also keinen statistischen Zusammenhang.")
+    plt.plot(linregress_x, linregress_y, 'o', label='original data')
+    plt.plot(linregress_x, intercept + slope*linregress_x, 'r', label='fitted line')
+    plt.legend()
+    plt.show()
     
-# https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.linregress.html
-linregress_x = dfDez["Lufttemperatur Tagesminimum"]
-# linregress_x = df["Lufttemperatur Tagesminimum"]
-linregress_y = dfDez['Niederschlag']
-# linregress_y = df['Niederschlag']
-slope, intercept, r_value, p_value, std_err = stats.linregress(linregress_x, linregress_y)
-print("Die Korrelation beträgt:", round(r_value, 3), " und R^2 beträgt:", round(r_value ** 2, 3))
-print("Die Variablen haben also keinen statistischen Zusammenhang.")
-plt.plot(linregress_x, linregress_y, 'o', label='original data')
-plt.plot(linregress_x, intercept + slope*linregress_x, 'r', label='fitted line')
-plt.legend()
-plt.show()
-    
-    
+# Regressionsanalyse()   
     
 
 dfSnowDezperYearSum = dfDez['Gesamtschneehöhe'].groupby(dfDez['Datum'].dt.year).sum()
