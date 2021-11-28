@@ -38,27 +38,55 @@ df["Datum"] = pd.to_datetime(df["date"], format='%Y%m%d')
 
 #Berechnung Schneehöhe gestern - Schneehöhe heute = Differenz eines Tages
 df["SchneeTagesDifferenz"]= df['Gesamtschneehöhe'].shift(-1) - df['Gesamtschneehöhe']
-df["SchneeVorVorTagesDifferenz"]= df['SchneeTagesDifferenz'].shift(-1)
+df["SchneeVortag"]= df['SchneeTagesDifferenz'].shift(-1)
+df["SchneeVorVortag"]= df["SchneeVortag"].shift(-1)
 
 #Selektion von Dezember Tagen
 dfDez = df[pd.to_datetime(df['Datum']).dt.month == 12]
 
 #DfDez mit weniger Spalten
-dfDez = dfDez[['Datum','Gesamtschneehöhe','SchneeTagesDifferenz', "SchneeVorVorTagesDifferenz",'Niederschlag','Lufttemperatur Tagesmittel','Lufttemperatur Tagesminimum','Lufttemperatur Tagesmaximum']]
+dfDez = dfDez[['Datum','Gesamtschneehöhe','SchneeTagesDifferenz', "SchneeVortag", "SchneeVorVortag",'Niederschlag','Lufttemperatur Tagesmittel','Lufttemperatur Tagesminimum','Lufttemperatur Tagesmaximum']]
+
+dfSnowDezperYearSum = dfDez['Gesamtschneehöhe'].groupby(dfDez['Datum'].dt.year).sum()
+dfSnowDezperYearCount = dfDez['Gesamtschneehöhe'].groupby(dfDez['Datum'].dt.year).agg(pos=lambda ts: (ts > 0).sum()) 
+dfSnow = df.loc[df['SchneeTagesDifferenz'] > 0]
+dfSnow = dfSnow.replace("-", np.nan)
+dfSnowDez = dfSnow[pd.to_datetime(dfSnow['Datum']).dt.month == 12]
+dfVortagSnow = dfDez.loc[dfDez['SchneeVortag'] > 0]
+dfVorVortagSnow = dfDez.loc[dfDez['SchneeVorVortag'] > 0]
 
 
-def Analyse_1t():
-    dfSnowDez = dfDez.loc[df['SchneeTagesDifferenz'] > 0]
-    dfVorVorSnowDez = dfDez.loc[df['SchneeVorVorTagesDifferenz'] > 0]
-    # dfSnowDez["Lufttemperatur Tagesmittel"].hist(bins = 40)
-    # dfSnowDez["Niederschlag"].hist(bins = 40)
-    dfVorVorSnowDez["Lufttemperatur Tagesmittel"].hist(bins = 40)
-    # dfVorVorSnowDez["Niederschlag"].hist(bins = 40)
-    print("Vortage ohne Niederschlag:", len(dfSnowDez.loc[dfSnowDez['Niederschlag'] == 0]), "Anzahl Schneetage:", len(dfSnowDez))
-    print("Vortage Schnee Durchschnitt Temperatur:", round(dfSnowDez["Lufttemperatur Tagesmittel"].mean(), 2), "Dezember Durchschnitt Temperatur:", round(dfDez["Lufttemperatur Tagesmittel"].mean(), 2))
-    print("Vorvortage ohne Niederschlag:", len(dfVorVorSnowDez.loc[dfVorVorSnowDez['Niederschlag'] == 0]), "Anzahl Schneetage:", len(dfSnowDez))
-    
-Analyse_1t()
+def Analyse_Vortage():
+    dfSnowDez["Lufttemperatur Tagesmittel"].hist(bins = 40)
+    print("Vortage ohne Niederschlag:", len(dfVortagSnow.loc[dfVortagSnow['Niederschlag'] == 0]), ", Anzahl Schneetage:", len(dfSnowDez), ", Anteil:", round(len(dfVortagSnow.loc[dfVortagSnow['Niederschlag'] == 0]) / len(dfVortagSnow), 2))
+    print("Vortage Schnee Durchschnitt Temperatur:", round(dfVortagSnow["Lufttemperatur Tagesmittel"].mean(), 2), "Dezember Durchschnitt Temperatur:", round(dfDez["Lufttemperatur Tagesmittel"].mean(), 2))
+    print("Vorvortage ohne Niederschlag:", len(dfVorVortagSnow.loc[dfVorVortagSnow['Niederschlag'] == 0]), ", Anzahl Schneetage:", len(dfSnowDez), ", Anteil:", round(len(dfVorVortagSnow.loc[dfVorVortagSnow['Niederschlag'] == 0]) / len(dfVorVortagSnow), 2))
+    print("Vorvortage Schnee Durchschnitt Temperatur:", round(dfVorVortagSnow["Lufttemperatur Tagesmittel"].mean(), 2), "Dezember Durchschnitt Temperatur:", round(dfDez["Lufttemperatur Tagesmittel"].mean(), 2))
+    # CDF Temperatur Vortag
+    meanTempDecade = np.mean(dfVortagSnow["Lufttemperatur Tagesmittel"])
+    stdTempDecade = np.std(dfVortagSnow["Lufttemperatur Tagesmittel"])
+    VerteilungTempVortag = norm(meanTempDecade, stdTempDecade)
+    VerteilungTempVortag = round(VerteilungTempVortag.cdf(3.5), 4)
+    print("An", round(VerteilungTempVortag*100, 2), "% der Tage vor dem Schneefall war die Temperatur unter 3.5 Grad.")
+    print("Diese Temperatur wurde an", round(len(dfDez.loc[dfDez['Lufttemperatur Tagesmittel'] <= 2])  / len(dfDez['Lufttemperatur Tagesmittel']), 2) * 100, "% der beobachteten Tage im Dezember unterschritten.")
+    # CDF Temperatur Vorvortag
+    meanTempDecade = np.mean(dfVorVortagSnow["Lufttemperatur Tagesmittel"])
+    stdTempDecade = np.std(dfVorVortagSnow["Lufttemperatur Tagesmittel"])
+    VerteilungTempVorvortag = norm(meanTempDecade, stdTempDecade)
+    VerteilungTempVorvortag = round(VerteilungTempVorvortag.cdf(4), 4)
+    print("An", round(VerteilungTempVorvortag*100, 2), "% des zweiten Tages vor dem Schneefall war die Temperatur unter 4.0 Grad.")
+    print("Diese Temperatur wurde an", round(len(dfDez.loc[dfDez['Lufttemperatur Tagesmittel'] <= 3.5])  / len(dfDez['Lufttemperatur Tagesmittel']), 2) * 100, "% der beobachteten Tage im Dezember unterschritten.")
+    # Regressionsanalyse Temperatur Vortag zu Temperatur Dezember
+    print("Regressionsanalyse nicht möglich, da für Temperatur vor Schneefall im Dezember und Temperatur im Dezember ungleich viele Beobachtungen vorhanden sind.")
+    # Hypothesentest Temperatur Vortag
+    HypothesentestTempVortag = stats.ttest_ind(dfDez["Lufttemperatur Tagesmittel"], dfVortagSnow["Lufttemperatur Tagesmittel"],nan_policy="omit")
+    print("Anhand eines extrem kleinen p-Werts von:", HypothesentestTempVortag[1], "stellen wir fest, dass die Temperatur am Tag vor Schneefall unterschiedlich von den restlichen Temperaturen im Dezember ist.")
+    # Hypothesentest Temperatur Vorvortag
+    HypothesentestTempVortag = stats.ttest_ind(dfDez["Lufttemperatur Tagesmittel"], dfVorVortagSnow["Lufttemperatur Tagesmittel"],nan_policy="omit")
+    print("Anhand eines extrem kleinen p-Werts von:", HypothesentestTempVortag[1], "stellen wir fest, dass die Temperatur zwei Tage vor Schneefall unterschiedlich von den restlichen Temperaturen im Dezember ist.")
+    # To-do: Überlegung, ob T-Test korrekt ist. P-Wert ist extrem klein, wohl wegen der grossen Anzahl Beobachtungen
+
+Analyse_Vortage()
 
 
 def LoopTimePeriod():
@@ -81,7 +109,7 @@ def LoopTimePeriod():
             dfDezYearWithPrecipation=  dfDezYear[(dfDezYear['Niederschlag'] > 2.0)]
             
             # Probability for Precipation in Year December (PrecipationDays / All Days)
-            pYear = dfDezYearWithPrecipation.shape[0] / (dfDezYearWithPrecipation.shape[0] + dfDezYearNoPrecipation.shape[0])
+            pPrecipationYear = dfDezYearWithPrecipation.shape[0] / (dfDezYearWithPrecipation.shape[0] + dfDezYearNoPrecipation.shape[0])
             
             ### Mean Temperatur per Year and Probability of changing temp
             meanTempYear = np.mean(dfDezYear["Lufttemperatur Tagesmittel"])
@@ -89,7 +117,7 @@ def LoopTimePeriod():
             Yearnorm = norm(meanTempYear, stdTempYear)
             
             TempYearbeneathSamplingTemp = round(Yearnorm.cdf(samplingTemperature), 4)
-            YearProbabilitySnow =(pYear * TempYearbeneathSamplingTemp) /TempYearbeneathSamplingTemp
+            YearProbabilitySnow =(pPrecipationYear * TempYearbeneathSamplingTemp) /TempYearbeneathSamplingTemp
                        
             dfPropabilitiesSnowPerDecade.loc[len(dfPropabilitiesSnowPerDecade.index)] = [timeperiod,year, len(dfDezYear),YearProbabilitySnow]
     
@@ -119,11 +147,7 @@ def Regressionsanalyse():
 # Regressionsanalyse()   
     
 
-dfSnowDezperYearSum = dfDez['Gesamtschneehöhe'].groupby(dfDez['Datum'].dt.year).sum()
-dfSnowDezperYearCount = dfDez['Gesamtschneehöhe'].groupby(dfDez['Datum'].dt.year).agg(pos=lambda ts: (ts > 0).sum()) 
-dfSnow = df.loc[df['SchneeTagesDifferenz'] > 0]
-dfSnow = dfSnow.replace("-", np.nan)
-dfSnowDez = dfSnow[pd.to_datetime(dfSnow['Datum']).dt.month == 12]
+
 
 # Loop for each decade
 # Funktion kann wieder aufgelöst werden, ich habe sie erstellt, damit die Rechnungen nicht jedesmal laufen
