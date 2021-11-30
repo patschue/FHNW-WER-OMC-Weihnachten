@@ -20,7 +20,7 @@ samplingTemperature = 2.0
 TimePeriod = 10
 
 dfPropabilitiesSnowPerDecade = pd.DataFrame({'TimePeriod': [],'Year': [],'NProbabilitySnow': [],'YearlyProbabilitySnow': []})
-
+TTestResults =pd.DataFrame({'TimePeriod': [],'TStatistic': [],'PValue': []})
 
 # Lesen von CSV daten
 df = pd.read_csv("TäglicheDaten.csv", sep=";")
@@ -90,15 +90,17 @@ Analyse_Vortage()
 
 
 def LoopTimePeriod():
-    for timeperiod in range(1900,2020,TimePeriod):
+
+    
+    for timeperiod in range(2010,1900,-TimePeriod):
        
         #Define TimePeriod Start and End Year
         startYear = timeperiod
         endYear = timeperiod +TimePeriod
         print(str(startYear) + " - " + str(endYear))
         
-        for year in range(startYear,endYear):
-            # print(year)
+        for year in range(endYear,startYear,-1):
+            #print(year)
             #dfDezYear = dfDez[(pd.to_datetime(dfDez['Datum']).dt.year >= year) & (pd.to_datetime(dfDez['Datum']).dt.year <= year)]
             dfDezYear = dfDez[(pd.to_datetime(dfDez['Datum']).dt.year == year)]
             # print(dfDezYear)
@@ -120,13 +122,21 @@ def LoopTimePeriod():
             YearProbabilitySnow =(pPrecipationYear * TempYearbeneathSamplingTemp) /TempYearbeneathSamplingTemp
                        
             dfPropabilitiesSnowPerDecade.loc[len(dfPropabilitiesSnowPerDecade.index)] = [timeperiod,year, len(dfDezYear),YearProbabilitySnow]
+            
+        a = dfPropabilitiesSnowPerDecade[(dfPropabilitiesSnowPerDecade['TimePeriod'] == timeperiod)]
+        b = dfPropabilitiesSnowPerDecade[(dfPropabilitiesSnowPerDecade['TimePeriod'] == 2010)]
+        
+        TTest= stats.ttest_ind(a['YearlyProbabilitySnow'], b['YearlyProbabilitySnow'],nan_policy="omit")
+        TTestResults.loc[len(TTestResults.index)] = [timeperiod,TTest[0],TTest[1]]
+            
+
     
-    a = dfPropabilitiesSnowPerDecade[(dfPropabilitiesSnowPerDecade['TimePeriod'] == 1900)]
-    b = dfPropabilitiesSnowPerDecade[(dfPropabilitiesSnowPerDecade['TimePeriod'] == 2010)]
+    #a = dfPropabilitiesSnowPerDecade[(dfPropabilitiesSnowPerDecade['TimePeriod'] == 1900)]
+    
 
-    return stats.ttest_ind(a['YearlyProbabilitySnow'], b['YearlyProbabilitySnow'],nan_policy="omit")
+    return TTestResults
 
-# TTestResults= LoopTimePeriod()
+TTestResults= LoopTimePeriod()
 
 
     
