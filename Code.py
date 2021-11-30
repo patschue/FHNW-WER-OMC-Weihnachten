@@ -43,6 +43,7 @@ df["SchneeVorVortag"]= df["SchneeVortag"].shift(-1)
 
 #Selektion von Dezember Tagen
 dfDez = df[pd.to_datetime(df['Datum']).dt.month == 12]
+dfDezforDays = dfDez[(pd.to_datetime(dfDez['Datum']).dt.year >= 1886) & (pd.to_datetime(dfDez['Datum']).dt.year <= 1900) | (pd.to_datetime(dfDez['Datum']).dt.year >= 1931) & (pd.to_datetime(dfDez['Datum']).dt.year <= 2020)]
 
 #DfDez mit weniger Spalten
 dfDez = dfDez[['Datum','Gesamtschneehöhe','SchneeTagesDifferenz', "SchneeVortag", "SchneeVorVortag",'Niederschlag','Lufttemperatur Tagesmittel','Lufttemperatur Tagesminimum','Lufttemperatur Tagesmaximum']]
@@ -52,6 +53,7 @@ dfSnowDezperYearCount = dfDez['Gesamtschneehöhe'].groupby(dfDez['Datum'].dt.yea
 dfSnow = df.loc[df['SchneeTagesDifferenz'] > 0]
 dfSnow = dfSnow.replace("-", np.nan)
 dfSnowDez = dfSnow[pd.to_datetime(dfSnow['Datum']).dt.month == 12]
+dfTest = dfSnowDez[(pd.to_datetime(dfSnowDez['Datum']).dt.year >= 1886) & (pd.to_datetime(dfSnowDez['Datum']).dt.year <= 1900) | (pd.to_datetime(dfSnowDez['Datum']).dt.year >= 1931) & (pd.to_datetime(dfSnowDez['Datum']).dt.year <= 2020)]
 dfVortagSnow = dfDez.loc[dfDez['SchneeVortag'] > 0]
 dfVorVortagSnow = dfDez.loc[dfDez['SchneeVorVortag'] > 0]
 
@@ -62,6 +64,11 @@ def Analyse_Vortage():
     print("Vortage Schnee Durchschnitt Temperatur:", round(dfVortagSnow["Lufttemperatur Tagesmittel"].mean(), 2), "Dezember Durchschnitt Temperatur:", round(dfDez["Lufttemperatur Tagesmittel"].mean(), 2))
     print("Vorvortage ohne Niederschlag:", len(dfVorVortagSnow.loc[dfVorVortagSnow['Niederschlag'] == 0]), ", Anzahl Schneetage:", len(dfSnowDez), ", Anteil:", round(len(dfVorVortagSnow.loc[dfVorVortagSnow['Niederschlag'] == 0]) / len(dfVorVortagSnow), 2))
     print("Vorvortage Schnee Durchschnitt Temperatur:", round(dfVorVortagSnow["Lufttemperatur Tagesmittel"].mean(), 2), "Dezember Durchschnitt Temperatur:", round(dfDez["Lufttemperatur Tagesmittel"].mean(), 2))
+    print("Tage mit Temperatur für Schnee:", len(dfDezforDays[dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature]), "und an", len(dfDezforDays[(dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature) & (dfDezforDays["SchneeVortag"] > 0)]), "folgenden Tagen hat es geschneit.")
+    print("Tage mit Temperatur für Schnee:", len(dfDezforDays[dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature]), "und an", len(dfDezforDays[(dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature) & (dfDezforDays["SchneeVorVortag"] > 0)]), "übernächsten Tagen hat es geschneit.")
+    print("Tage mit Temperatur x + 2 für Schnee:", len(dfDezforDays[dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature + 2]), "und an", len(dfDezforDays[(dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature + 2) & (dfDezforDays["SchneeVortag"] > 0)]), "folgenden Tagen hat es geschneit.")
+    print("Tage mit Temperatur x + 2 für Schnee:", len(dfDezforDays[dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature + 2]), "und an", len(dfDezforDays[(dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature + 2) & (dfDezforDays["SchneeVorVortag"] > 0)]), "übernächsten Tagen hat es geschneit.")
+    # Test = dfDezforDays[(dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature) & (dfDezforDays["SchneeVorVortag"] > 0)]
     # CDF Temperatur Vortag
     meanTempDecade = np.mean(dfVortagSnow["Lufttemperatur Tagesmittel"])
     stdTempDecade = np.std(dfVortagSnow["Lufttemperatur Tagesmittel"])
@@ -85,6 +92,7 @@ def Analyse_Vortage():
     HypothesentestTempVortag = stats.ttest_ind(dfDez["Lufttemperatur Tagesmittel"], dfVorVortagSnow["Lufttemperatur Tagesmittel"],nan_policy="omit")
     print("Anhand eines extrem kleinen p-Werts von:", HypothesentestTempVortag[1], "stellen wir fest, dass die Temperatur zwei Tage vor Schneefall unterschiedlich von den restlichen Temperaturen im Dezember ist.")
     # To-do: Überlegung, ob T-Test korrekt ist. P-Wert ist extrem klein, wohl wegen der grossen Anzahl Beobachtungen
+    # return Test
 
 Analyse_Vortage()
 
@@ -128,6 +136,7 @@ def LoopTimePeriod():
         
         TTest= stats.ttest_ind(a['YearlyProbabilitySnow'], b['YearlyProbabilitySnow'],nan_policy="omit")
         TTestResults.loc[len(TTestResults.index)] = [timeperiod,TTest[0],TTest[1]]
+        TTestResults["PValue"].plot()
             
 
     
@@ -136,7 +145,7 @@ def LoopTimePeriod():
 
     return TTestResults
 
-TTestResults= LoopTimePeriod()
+# TTestResults= LoopTimePeriod()
 
 
     
