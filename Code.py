@@ -13,6 +13,7 @@ import Distribution as d
 import matplotlib.pyplot as plt
 from numpy.random.mtrand import exponential
 from statistics import mean
+from statsmodels.stats.weightstats import ztest as ztest
 
 
 ##Global Definitions
@@ -61,14 +62,18 @@ dfVorVortagSnow = dfDez.loc[dfDez['SchneeVorVortag'] > 0]
 def Analyse_Vortage():
     dfSnowDez["Lufttemperatur Tagesmittel"].hist(bins = 40)
     print("Vortage ohne Niederschlag:", len(dfVortagSnow.loc[dfVortagSnow['Niederschlag'] == 0]), ", Anzahl Schneetage:", len(dfSnowDez), ", Anteil:", round(len(dfVortagSnow.loc[dfVortagSnow['Niederschlag'] == 0]) / len(dfVortagSnow), 2))
-    print("Vortage Schnee Durchschnitt Temperatur:", round(dfVortagSnow["Lufttemperatur Tagesmittel"].mean(), 2), "Dezember Durchschnitt Temperatur:", round(dfDez["Lufttemperatur Tagesmittel"].mean(), 2))
+    print("Vortage Schnee Durchschnitt Temperatur:", round(dfVortagSnow["Lufttemperatur Tagesmittel"].mean(), 2), "Dezember Durchschnitt Temperatur:", round(dfDezforDays["Lufttemperatur Tagesmittel"].mean(), 2))
     print("Vorvortage ohne Niederschlag:", len(dfVorVortagSnow.loc[dfVorVortagSnow['Niederschlag'] == 0]), ", Anzahl Schneetage:", len(dfSnowDez), ", Anteil:", round(len(dfVorVortagSnow.loc[dfVorVortagSnow['Niederschlag'] == 0]) / len(dfVorVortagSnow), 2))
-    print("Vorvortage Schnee Durchschnitt Temperatur:", round(dfVorVortagSnow["Lufttemperatur Tagesmittel"].mean(), 2), "Dezember Durchschnitt Temperatur:", round(dfDez["Lufttemperatur Tagesmittel"].mean(), 2))
+    print("Vorvortage Schnee Durchschnitt Temperatur:", round(dfVorVortagSnow["Lufttemperatur Tagesmittel"].mean(), 2), "Dezember Durchschnitt Temperatur:", round(dfDezforDays["Lufttemperatur Tagesmittel"].mean(), 2))
     print("Tage mit Temperatur für Schnee:", len(dfDezforDays[dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature]), "und an", len(dfDezforDays[(dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature) & (dfDezforDays["SchneeVortag"] > 0)]), "folgenden Tagen hat es geschneit.")
     print("Tage mit Temperatur für Schnee:", len(dfDezforDays[dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature]), "und an", len(dfDezforDays[(dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature) & (dfDezforDays["SchneeVorVortag"] > 0)]), "übernächsten Tagen hat es geschneit.")
     print("Tage mit Temperatur x + 2 für Schnee:", len(dfDezforDays[dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature + 2]), "und an", len(dfDezforDays[(dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature + 2) & (dfDezforDays["SchneeVortag"] > 0)]), "folgenden Tagen hat es geschneit.")
     print("Tage mit Temperatur x + 2 für Schnee:", len(dfDezforDays[dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature + 2]), "und an", len(dfDezforDays[(dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature + 2) & (dfDezforDays["SchneeVorVortag"] > 0)]), "übernächsten Tagen hat es geschneit.")
     # Test = dfDezforDays[(dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature) & (dfDezforDays["SchneeVorVortag"] > 0)]
+    print("Tage mit Niederschlag:", len(dfDezforDays[dfDezforDays["Niederschlag"] < 2.0]), "und an", len(dfDezforDays[(dfDezforDays["Niederschlag"] < 2.0) & (dfDezforDays["SchneeVortag"] > 0)]), "folgenden Tagen hat es geschneit.")
+    print("Tage mit Niederschlag:", len(dfDezforDays[dfDezforDays["Niederschlag"] < 2.0]), "und an", len(dfDezforDays[(dfDezforDays["Niederschlag"] < 2.0) & (dfDezforDays["SchneeVorVortag"] > 0)]), "übernächsten Tagen hat es geschneit.")
+    print("Tage mit Niederschlag und Temperatur für Schnee:", len(dfDezforDays[(dfDezforDays["Niederschlag"] < 2.0) & (dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature)]), "und an", len(dfDezforDays[(dfDezforDays["Niederschlag"] < 2.0) & (dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature) & (dfDezforDays["SchneeVortag"] > 0)]), "folgenden Tagen hat es geschneit.")
+    print("Tage mit Niederschlag und Temperatur für Schnee:", len(dfDezforDays[(dfDezforDays["Niederschlag"] < 2.0) & (dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature)]), "und an", len(dfDezforDays[(dfDezforDays["Niederschlag"] < 2.0) & (dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature) & (dfDezforDays["SchneeVorVortag"] > 0)]), "übernächsten Tagen hat es geschneit.")
     # CDF Temperatur Vortag
     meanTempDecade = np.mean(dfVortagSnow["Lufttemperatur Tagesmittel"])
     stdTempDecade = np.std(dfVortagSnow["Lufttemperatur Tagesmittel"])
@@ -86,11 +91,17 @@ def Analyse_Vortage():
     # Regressionsanalyse Temperatur Vortag zu Temperatur Dezember
     print("Regressionsanalyse nicht möglich, da für Temperatur vor Schneefall im Dezember und Temperatur im Dezember ungleich viele Beobachtungen vorhanden sind.")
     # Hypothesentest Temperatur Vortag
-    HypothesentestTempVortag = stats.ttest_ind(dfDez["Lufttemperatur Tagesmittel"], dfVortagSnow["Lufttemperatur Tagesmittel"],nan_policy="omit")
-    print("Anhand eines extrem kleinen p-Werts von:", HypothesentestTempVortag[1], "stellen wir fest, dass die Temperatur am Tag vor Schneefall unterschiedlich von den restlichen Temperaturen im Dezember ist.")
+    # HypothesentestTempVortag = stats.ttest_ind(dfDezforDays["Lufttemperatur Tagesmittel"], dfVortagSnow["Lufttemperatur Tagesmittel"],nan_policy="omit")
+    # print("Anhand eines extrem kleinen p-Werts von:", HypothesentestTempVortag[1], "stellen wir fest, dass die Temperatur am Tag vor Schneefall unterschiedlich von den restlichen Temperaturen im Dezember ist.")
+    # Alternativer Hypothesentest Temperatur Vortag
+    result = ztest(dfDezforDays["Lufttemperatur Tagesmittel"], dfVortagSnow["Lufttemperatur Tagesmittel"], value=0)
+    print(result)
     # Hypothesentest Temperatur Vorvortag
-    HypothesentestTempVortag = stats.ttest_ind(dfDez["Lufttemperatur Tagesmittel"], dfVorVortagSnow["Lufttemperatur Tagesmittel"],nan_policy="omit")
-    print("Anhand eines extrem kleinen p-Werts von:", HypothesentestTempVortag[1], "stellen wir fest, dass die Temperatur zwei Tage vor Schneefall unterschiedlich von den restlichen Temperaturen im Dezember ist.")
+    # HypothesentestTempVortag = stats.ttest_ind(dfDezforDays["Lufttemperatur Tagesmittel"], dfVorVortagSnow["Lufttemperatur Tagesmittel"],nan_policy="omit")
+    # print("Anhand eines extrem kleinen p-Werts von:", HypothesentestTempVortag[1], "stellen wir fest, dass die Temperatur zwei Tage vor Schneefall unterschiedlich von den restlichen Temperaturen im Dezember ist.")
+    # Alternativer Hypothesentest Temperatur Vorvortag
+    result = ztest(dfDezforDays["Lufttemperatur Tagesmittel"], dfVorVortagSnow["Lufttemperatur Tagesmittel"], value=0)
+    print(result)
     # To-do: Überlegung, ob T-Test korrekt ist. P-Wert ist extrem klein, wohl wegen der grossen Anzahl Beobachtungen
     # return Test
 
