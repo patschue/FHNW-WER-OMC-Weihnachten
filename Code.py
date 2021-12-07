@@ -24,8 +24,11 @@ dfPropabilitiesSnowPerDecade = pd.DataFrame({'TimePeriod': [],'Year': [],'NProba
 TTestResults =pd.DataFrame({'TimePeriod': [],'TStatistic': [],'PValue': []})
 
 # Lesen von CSV daten
-df = pd.read_csv("TäglicheDaten.csv", sep=";")
+# df = pd.read_csv("TäglicheDaten.csv", sep=";")
 # df = pd.read_csv("Meiringen.csv", sep=";")
+# df = pd.read_csv("Säntis.csv", sep=";")
+# df = pd.read_csv("StBernard.csv", sep=";")
+df = pd.read_csv("Samedan.csv", sep=";")
 
 #Korrekturen von Leeren werten mit 0
 df["Gesamtschneehöhe"] = df["Gesamtschneehöhe"].replace('-', 0)
@@ -34,6 +37,8 @@ df["Lufttemperatur Tagesminimum"] = df["Lufttemperatur Tagesminimum"].replace('-
 #Schneehöhe numerisch machen
 df["Gesamtschneehöhe"] = pd.to_numeric(df["Gesamtschneehöhe"])
 df["Lufttemperatur Tagesminimum"] = pd.to_numeric(df["Lufttemperatur Tagesminimum"])
+df["Lufttemperatur Tagesmittel"] = pd.to_numeric(df["Lufttemperatur Tagesmittel"])
+
 
 #Umformatierung zu Datum
 df["Datum"] = pd.to_datetime(df["date"], format='%Y%m%d')
@@ -114,7 +119,7 @@ def Analyse_Vortage():
     # To-do: Überlegung, ob T-Test korrekt ist. P-Wert ist extrem klein, wohl wegen der grossen Anzahl Beobachtungen
     # return Test
 
-Analyse_Vortage()
+# Analyse_Vortage()
 
 
 def LoopTimePeriod():
@@ -128,7 +133,7 @@ def LoopTimePeriod():
         print(str(startYear) + " - " + str(endYear))
         
         for year in range(endYear,startYear,-1):
-            #print(year)
+            # print(year)
             #dfDezYear = dfDez[(pd.to_datetime(dfDez['Datum']).dt.year >= year) & (pd.to_datetime(dfDez['Datum']).dt.year <= year)]
             dfDezYear = dfDez[(pd.to_datetime(dfDez['Datum']).dt.year == year)]
             # print(dfDezYear)
@@ -147,14 +152,15 @@ def LoopTimePeriod():
             Yearnorm = norm(meanTempYear, stdTempYear)
             
             TempYearbeneathSamplingTemp = round(Yearnorm.cdf(samplingTemperature), 4)
+            # Wahrscheinlichkeit von Schnee gegeben Temperatur genug kalt
             YearProbabilitySnow =(pPrecipationYear * TempYearbeneathSamplingTemp) /TempYearbeneathSamplingTemp
                        
             dfPropabilitiesSnowPerDecade.loc[len(dfPropabilitiesSnowPerDecade.index)] = [timeperiod,year, len(dfDezYear),YearProbabilitySnow]
             
-        a = dfPropabilitiesSnowPerDecade[(dfPropabilitiesSnowPerDecade['TimePeriod'] == timeperiod)]
-        b = dfPropabilitiesSnowPerDecade[(dfPropabilitiesSnowPerDecade['TimePeriod'] == 2010)]
+        PropDecadeOld = dfPropabilitiesSnowPerDecade[(dfPropabilitiesSnowPerDecade['TimePeriod'] == timeperiod)]
+        PropDecadeNow = dfPropabilitiesSnowPerDecade[(dfPropabilitiesSnowPerDecade['TimePeriod'] == 2010)]
         
-        TTest= stats.ttest_ind(a['YearlyProbabilitySnow'], b['YearlyProbabilitySnow'],nan_policy="omit")
+        TTest= stats.ttest_ind(PropDecadeOld['YearlyProbabilitySnow'], PropDecadeNow['YearlyProbabilitySnow'],nan_policy="omit")
         TTestResults.loc[len(TTestResults.index)] = [timeperiod,TTest[0],TTest[1]]
         TTestResults["PValue"].plot()
             
@@ -165,7 +171,7 @@ def LoopTimePeriod():
 
     return TTestResults
 
-# TTestResults= LoopTimePeriod()
+TTestResults= LoopTimePeriod()
 
 
     
