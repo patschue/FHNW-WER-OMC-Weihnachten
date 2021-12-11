@@ -15,17 +15,16 @@ HypothesisDecade = 2010
 
 
 #Regionen CSV Daten
-# regionsCsvData = [["Basel.csv", ";",1860]]
-regionsCsvData = [["Basel.csv", ";",1860], ["Meiringen.csv", ";",1958], ["SilsMaria.csv", ";",1900], ["StBernard.csv", ";",1860], ["Säntis.csv", ";",1900]] #Meiringen war 1860
-Vortage = pd.DataFrame(index=['Tage mit Temperatur für Schnee', 'Tage mit Schneefall', 'Temperatur Wahrscheinlichkeit Folgetag', 'Temperatur Wahrscheinlichkeit zweiter Folgetag', 'Niederschlag Wahrscheinlichkeit Folgetag', 'Niederschlag Wahrscheinlichkeit zweiter Folgetag', 'P-Wert Vergleich Temp Vortag'])
+regionsCsvData = [["Basel.csv", ";",1860]]
+# regionsCsvData = [["Basel.csv", ";",1860], ["Meiringen.csv", ";",1958], ["SilsMaria.csv", ";",1900], ["StBernard.csv", ";",1860], ["Säntis.csv", ";",1900]] #Meiringen war 1860
+Vortage = pd.DataFrame(index=['Tage mit Temperatur für Schnee', 'Tage mit Schneefall am Folgetag', 'Temperatur Wahrscheinlichkeit Folgetag', 'Temperatur Wahrscheinlichkeit zweiter Folgetag', 'Niederschlag Wahrscheinlichkeit Folgetag', 'Niederschlag Wahrscheinlichkeit zweiter Folgetag', 'P-Wert Vergleich Temp Vortag', 'Temperatur vor Schneefall', 'Temperatur Dezember'])
 
 
 def CleanDF(regionDataFrame):
 
     # Korrekturen von Leeren werten mit 0
     regionDataFrame["Gesamtschneehöhe"] = regionDataFrame["Gesamtschneehöhe"].replace('-', 0)
-    regionDataFrame["Lufttemperatur Tagesmittel"] = regionDataFrame["Lufttemperatur Tagesmittel"].replace(
-    "−", "-")
+    regionDataFrame["Lufttemperatur Tagesmittel"] = regionDataFrame["Lufttemperatur Tagesmittel"].replace("−", "-")
     regionDataFrame["Lufttemperatur Tagesmittel"] = pd.to_numeric(
     regionDataFrame["Lufttemperatur Tagesmittel"], errors='coerce')
     regionDataFrame["Niederschlag"] = pd.to_numeric(regionDataFrame["Niederschlag"], errors='coerce')
@@ -38,8 +37,7 @@ def CleanDF(regionDataFrame):
     regionDataFrame["Datum"] = pd.to_datetime(regionDataFrame["date"], format='%Y%m%d')
 
     # Berechnung Schneehöhe gestern - Schneehöhe heute = Differenz eines Tages
-    regionDataFrame["SchneeTagesDifferenz"] = regionDataFrame['Gesamtschneehöhe'].shift(
-    -1) - regionDataFrame['Gesamtschneehöhe']
+    regionDataFrame["SchneeTagesDifferenz"] = regionDataFrame['Gesamtschneehöhe'].shift(-1) - regionDataFrame['Gesamtschneehöhe']
     regionDataFrame["SchneeVortag"] = regionDataFrame['SchneeTagesDifferenz'].shift(-1)
     regionDataFrame["SchneeVorVortag"] = regionDataFrame["SchneeVortag"].shift(-1)
 
@@ -148,59 +146,56 @@ def Analyse_Vortage(Region):
     if Region[0] == "StBernard.csv":
         Vortage[Region[0]] = np.nan
     else:
-        # Cleanup für Analyse Vortage
-        dfSnow = df.loc[df['SchneeTagesDifferenz'] > 0]
-        dfSnow = dfSnow.replace("-", np.nan)
-        dfSnowDez = dfSnow[pd.to_datetime(dfSnow['Datum']).dt.month == 12]
-        dfVortagSnow = dfDez.loc[dfDez['SchneeVortag'] > 0]
-        dfVorVortagSnow = dfDez.loc[dfDez['SchneeVorVortag'] > 0]
-        dfDezforDays = dfDez[(pd.to_datetime(dfDez['Datum']).dt.year >= 1886) & (pd.to_datetime(dfDez['Datum']).dt.year <= 1900) | (pd.to_datetime(dfDez['Datum']).dt.year >= 1931) & (pd.to_datetime(dfDez['Datum']).dt.year <= 2020)]
-        # Next Step
-        print("Tage mit Temperatur für Schnee:", len(dfDezforDays[dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature]), "und an", len(dfDezforDays[(dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature) & (dfDezforDays["SchneeVortag"] > 0)]), "folgenden Tagen hat es geschneit.")
-        print("Wahrscheinlichkeit:", len(dfDezforDays[(dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature) & (dfDezforDays["SchneeVortag"] > 0)]) / len(dfDezforDays[dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature]))
-        print("Tage mit Temperatur für Schnee:", len(dfDezforDays[dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature]), "und an", len(dfDezforDays[(dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature) & (dfDezforDays["SchneeVorVortag"] > 0)]), "übernächsten Tagen hat es geschneit.")
-        print("Wahrscheinlichkeit:", len(dfDezforDays[(dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature) & (dfDezforDays["SchneeVorVortag"] > 0)]) / len(dfDezforDays[dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature]))
-        TageTemperatur = len(dfDezforDays[dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature])
-        TageSchneefall = len(dfDezforDays[dfDezforDays["SchneeVortag"] > 0])
-        WahrscheinlichkeitTempSchneeFolgetag = round(len(dfDezforDays[(dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature) & (dfDezforDays["SchneeVortag"] > 0)]) / len(dfDezforDays[dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature]), 4)
-        WahrscheinlichkeitTempSchneezweiterFolgetag = round(len(dfDezforDays[(dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature) & (dfDezforDays["SchneeVorVortag"] > 0)]) / len(dfDezforDays[dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature]), 4)
-        print("Tage mit Temperatur x + 2 für Schnee:", len(dfDezforDays[dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature + 2]), "und an", len(dfDezforDays[(dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature + 2) & (dfDezforDays["SchneeVortag"] > 0)]), "folgenden Tagen hat es geschneit.")
-        print("Wahrscheinlichkeit:", len(dfDezforDays[(dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature + 2) & (dfDezforDays["SchneeVortag"] > 0)]) / len(dfDezforDays[dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature + 2]))
-        print("Tage mit Temperatur x + 2 für Schnee:", len(dfDezforDays[dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature + 2]), "und an", len(dfDezforDays[(dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature + 2) & (dfDezforDays["SchneeVorVortag"] > 0)]), "übernächsten Tagen hat es geschneit.")
-        print("Wahrscheinlichkeit:", len(dfDezforDays[(dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature + 2) & (dfDezforDays["SchneeVorVortag"] > 0)]) / len(dfDezforDays[dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature + 2]))    
-        print("Tage mit Niederschlag:", len(dfDezforDays[dfDezforDays["Niederschlag"] > 0]), "und an", len(dfDezforDays[(dfDezforDays["Niederschlag"] > 0) & (dfDezforDays["SchneeVortag"] > 0)]), "folgenden Tagen hat es geschneit.")
-        print("Wahrscheinlichkeit:", len(dfDezforDays[(dfDezforDays["Niederschlag"] > 0) & (dfDezforDays["SchneeVortag"] > 0)]) / len(dfDezforDays[dfDezforDays["Niederschlag"] > 0])) 
-        print("Tage mit Niederschlag:", len(dfDezforDays[dfDezforDays["Niederschlag"] > 0]), "und an", len(dfDezforDays[(dfDezforDays["Niederschlag"] > 0) & (dfDezforDays["SchneeVorVortag"] > 0)]), "übernächsten Tagen hat es geschneit.")
-        print("Wahrscheinlichkeit:", len(dfDezforDays[(dfDezforDays["Niederschlag"] > 0) & (dfDezforDays["SchneeVorVortag"] > 0)]) / len(dfDezforDays[dfDezforDays["Niederschlag"] > 0])) 
-        WahrscheinlichkeitNiedersSchneeFolgetag = round(len(dfDezforDays[(dfDezforDays["Niederschlag"] > 0) & (dfDezforDays["SchneeVortag"] > 0)]) / len(dfDezforDays[dfDezforDays["Niederschlag"] > 0]), 4)
-        WahrscheinlichkeitNiedersSchneezweiterFolgetag = round(len(dfDezforDays[(dfDezforDays["Niederschlag"] > 0) & (dfDezforDays["SchneeVorVortag"] > 0)]) / len(dfDezforDays[dfDezforDays["Niederschlag"] > 0]), 4)
-        print("Tage mit Niederschlag und Temperatur für Schnee:", len(dfDezforDays[(dfDezforDays["Niederschlag"] > 0) & (dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature)]), "und an", len(dfDezforDays[(dfDezforDays["Niederschlag"] > 0) & (dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature) & (dfDezforDays["SchneeVortag"] > 0)]), "folgenden Tagen hat es geschneit.")
-        print("Wahrscheinlichkeit:", len(dfDezforDays[(dfDezforDays["Niederschlag"] > 0) & (dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature) & (dfDezforDays["SchneeVortag"] > 0)]) / len(dfDezforDays[(dfDezforDays["Niederschlag"] > 0) & (dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature)]))
-        print("Tage mit Niederschlag und Temperatur für Schnee:", len(dfDezforDays[(dfDezforDays["Niederschlag"] > 0) & (dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature)]), "und an", len(dfDezforDays[(dfDezforDays["Niederschlag"] > 0) & (dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature) & (dfDezforDays["SchneeVorVortag"] > 0)]), "übernächsten Tagen hat es geschneit.")
-        print("Wahrscheinlichkeit:", len(dfDezforDays[(dfDezforDays["Niederschlag"] > 0) & (dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature) & (dfDezforDays["SchneeVorVortag"] > 0)]) / len(dfDezforDays[(dfDezforDays["Niederschlag"] > 0) & (dfDezforDays["Lufttemperatur Tagesmittel"] <= samplingTemperature)]))
-        # CDF Temperatur Vortag
-        meanTempDecade = np.mean(dfVortagSnow["Lufttemperatur Tagesmittel"])
-        stdTempDecade = np.std(dfVortagSnow["Lufttemperatur Tagesmittel"])
-        VerteilungTempVortag = norm(meanTempDecade, stdTempDecade)
-        VerteilungTempVortag = round(VerteilungTempVortag.cdf(3.5), 4)
-        print("An", round(VerteilungTempVortag*100, 2), "% der Tage vor dem Schneefall war die Temperatur unter 3.5 Grad.")
-        print("Diese Temperatur wurde an", round(len(dfDez.loc[dfDez['Lufttemperatur Tagesmittel'] <= 2])  / len(dfDez['Lufttemperatur Tagesmittel']), 2) * 100, "% der beobachteten Tage im Dezember unterschritten.")
-        # CDF Temperatur Vorvortag
-        meanTempDecade = np.mean(dfVorVortagSnow["Lufttemperatur Tagesmittel"])
-        stdTempDecade = np.std(dfVorVortagSnow["Lufttemperatur Tagesmittel"])
-        VerteilungTempVorvortag = norm(meanTempDecade, stdTempDecade)
-        VerteilungTempVorvortag = round(VerteilungTempVorvortag.cdf(4), 4)
-        print("An", round(VerteilungTempVorvortag*100, 2), "% des zweiten Tages vor dem Schneefall war die Temperatur unter 4.0 Grad.")
-        print("Diese Temperatur wurde an", round(len(dfDez.loc[dfDez['Lufttemperatur Tagesmittel'] <= 3.5])  / len(dfDez['Lufttemperatur Tagesmittel']), 2) * 100, "% der beobachteten Tage im Dezember unterschritten.")
-        # Regressionsanalyse Temperatur Vortag zu Temperatur Dezember
-        print("Regressionsanalyse nicht möglich, da für Temperatur vor Schneefall im Dezember und Temperatur im Dezember ungleich viele Beobachtungen vorhanden sind.")
-        # Hypothesentest Temperatur Vortag
-        result = ztest(dfDezforDays["Lufttemperatur Tagesmittel"], dfVortagSnow["Lufttemperatur Tagesmittel"], value=0)
-        print(result)
-        Vortage[Region[0]] = [TageTemperatur, TageSchneefall, WahrscheinlichkeitTempSchneeFolgetag, WahrscheinlichkeitTempSchneezweiterFolgetag, WahrscheinlichkeitNiedersSchneeFolgetag, WahrscheinlichkeitNiedersSchneezweiterFolgetag, result[1]]
-        # Hypothesentest Temperatur Vorvortag
-        result = ztest(dfDezforDays["Lufttemperatur Tagesmittel"], dfVorVortagSnow["Lufttemperatur Tagesmittel"], value=0)
-        print(result)
+    # Cleanup für Analyse Vortage
+    dfSnow = df.loc[df['SchneeTagesDifferenz'] > 0]
+    dfSnow = dfSnow.replace("-", np.nan)
+    dfSnowDez = dfSnow[pd.to_datetime(dfSnow['Datum']).dt.month == 12]
+    dfVortagSnow = dfDez.loc[dfDez['SchneeVortag'] > 0]
+    dfVorVortagSnow = dfDez.loc[dfDez['SchneeVorVortag'] > 0]
+    dfDezforDays = dfDez[(pd.to_datetime(dfDez['Datum']).dt.year >= 1886) & (pd.to_datetime(dfDez['Datum']).dt.year <= 1900) | (pd.to_datetime(dfDez['Datum']).dt.year >= 1931) & (pd.to_datetime(dfDez['Datum']).dt.year <= 2020)]
+    # Next Step
+    print("Tage mit Temperatur für Schnee:", len(dfDezforDays[dfDezforDays["Lufttemperatur Tagesmittel"] <= 3.5]), "und an", len(dfDezforDays[(dfDezforDays["Lufttemperatur Tagesmittel"] <= 3.5) & (dfDezforDays["SchneeVortag"] > 0)]), "folgenden Tagen hat es geschneit.")
+    print("Wahrscheinlichkeit:", round(len(dfDezforDays[(dfDezforDays["Lufttemperatur Tagesmittel"] <= 3.5) & (dfDezforDays["SchneeVortag"] > 0)]) / len(dfDezforDays[dfDezforDays["Lufttemperatur Tagesmittel"] <= 3.5]), 4))
+    print("Tage mit Temperatur für Schnee:", len(dfDezforDays[dfDezforDays["Lufttemperatur Tagesmittel"] <= 4.0]), "und an", len(dfDezforDays[(dfDezforDays["Lufttemperatur Tagesmittel"] <= 4.0) & (dfDezforDays["SchneeVorVortag"] > 0)]), "übernächsten Tagen hat es geschneit.")
+    print("Wahrscheinlichkeit:", round(len(dfDezforDays[(dfDezforDays["Lufttemperatur Tagesmittel"] <= 4.0) & (dfDezforDays["SchneeVorVortag"] > 0)]) / len(dfDezforDays[dfDezforDays["Lufttemperatur Tagesmittel"] <= 4.0]), 4))
+    TageTemperatur = len(dfDezforDays[dfDezforDays["Lufttemperatur Tagesmittel"] <= 3.5])
+    TageSchneefall = len(dfDezforDays[(dfDezforDays["Lufttemperatur Tagesmittel"] <= 3.5) & (dfDezforDays["SchneeVortag"] > 0)])
+    WahrscheinlichkeitTempSchneeFolgetag = round(len(dfDezforDays[(dfDezforDays["Lufttemperatur Tagesmittel"] <= 3.5) & (dfDezforDays["SchneeVortag"] > 0)]) / len(dfDezforDays[dfDezforDays["Lufttemperatur Tagesmittel"] <= 3.5]), 4)
+    WahrscheinlichkeitTempSchneezweiterFolgetag = round(len(dfDezforDays[(dfDezforDays["Lufttemperatur Tagesmittel"] <= 4.0) & (dfDezforDays["SchneeVorVortag"] > 0)]) / len(dfDezforDays[dfDezforDays["Lufttemperatur Tagesmittel"] <= 4.0]), 4)
+    print("Tage mit Niederschlag:", len(dfDezforDays[dfDezforDays["Niederschlag"] > 0]), "und an", len(dfDezforDays[(dfDezforDays["Niederschlag"] > 0) & (dfDezforDays["SchneeVortag"] > 0)]), "folgenden Tagen hat es geschneit.")
+    print("Wahrscheinlichkeit:", round(len(dfDezforDays[(dfDezforDays["Niederschlag"] > 0) & (dfDezforDays["SchneeVortag"] > 0)]) / len(dfDezforDays[dfDezforDays["Niederschlag"] > 0]), 4)) 
+    print("Tage mit Niederschlag:", len(dfDezforDays[dfDezforDays["Niederschlag"] > 0]), "und an", len(dfDezforDays[(dfDezforDays["Niederschlag"] > 0) & (dfDezforDays["SchneeVorVortag"] > 0)]), "übernächsten Tagen hat es geschneit.")
+    print("Wahrscheinlichkeit:", round(len(dfDezforDays[(dfDezforDays["Niederschlag"] > 0) & (dfDezforDays["SchneeVorVortag"] > 0)]) / len(dfDezforDays[dfDezforDays["Niederschlag"] > 0]), 4)) 
+    WahrscheinlichkeitNiedersSchneeFolgetag = round(len(dfDezforDays[(dfDezforDays["Niederschlag"] > 0) & (dfDezforDays["SchneeVortag"] > 0)]) / len(dfDezforDays[dfDezforDays["Niederschlag"] > 0]), 4)
+    WahrscheinlichkeitNiedersSchneezweiterFolgetag = round(len(dfDezforDays[(dfDezforDays["Niederschlag"] > 0) & (dfDezforDays["SchneeVorVortag"] > 0)]) / len(dfDezforDays[dfDezforDays["Niederschlag"] > 0]), 4)
+    print("Tage mit Niederschlag und Temperatur für Schnee:", len(dfDezforDays[(dfDezforDays["Niederschlag"] > 0) & (dfDezforDays["Lufttemperatur Tagesmittel"] <= 3.5)]), "und an", len(dfDezforDays[(dfDezforDays["Niederschlag"] > 0) & (dfDezforDays["Lufttemperatur Tagesmittel"] <= 3.5) & (dfDezforDays["SchneeVortag"] > 0)]), "folgenden Tagen hat es geschneit.")
+    print("Wahrscheinlichkeit:", round(len(dfDezforDays[(dfDezforDays["Niederschlag"] > 0) & (dfDezforDays["Lufttemperatur Tagesmittel"] <= 3.5) & (dfDezforDays["SchneeVortag"] > 0)]) / len(dfDezforDays[(dfDezforDays["Niederschlag"] > 0) & (dfDezforDays["Lufttemperatur Tagesmittel"] <= 3.5)]), 4))
+    print("Tage mit Niederschlag und Temperatur für Schnee:", len(dfDezforDays[(dfDezforDays["Niederschlag"] > 0) & (dfDezforDays["Lufttemperatur Tagesmittel"] <= 4.0)]), "und an", len(dfDezforDays[(dfDezforDays["Niederschlag"] > 0) & (dfDezforDays["Lufttemperatur Tagesmittel"] <= 4.0) & (dfDezforDays["SchneeVorVortag"] > 0)]), "übernächsten Tagen hat es geschneit.")
+    print("Wahrscheinlichkeit:", round(len(dfDezforDays[(dfDezforDays["Niederschlag"] > 0) & (dfDezforDays["Lufttemperatur Tagesmittel"] <= 4.0) & (dfDezforDays["SchneeVorVortag"] > 0)]) / len(dfDezforDays[(dfDezforDays["Niederschlag"] > 0) & (dfDezforDays["Lufttemperatur Tagesmittel"] <= 4.0)]), 4))
+    # CDF Temperatur Vortag
+    meanTempbeforeSnow = np.mean(dfVortagSnow["Lufttemperatur Tagesmittel"])
+    stdTempDecade = np.std(dfVortagSnow["Lufttemperatur Tagesmittel"])
+    VerteilungTempVortag = norm(meanTempbeforeSnow, stdTempDecade)
+    VerteilungTempVortag = round(VerteilungTempVortag.cdf(3.5), 4)
+    print("An", round(VerteilungTempVortag*100, 2), "% der Tage vor dem Schneefall war die Temperatur unter 3.5 Grad.")
+    print("Diese Temperatur wurde an", round(len(dfDez.loc[dfDez['Lufttemperatur Tagesmittel'] <= 2])  / len(dfDez['Lufttemperatur Tagesmittel']), 2) * 100, "% der beobachteten Tage im Dezember unterschritten.")
+    # CDF Temperatur Vorvortag
+    meanTempDecade = np.mean(dfVorVortagSnow["Lufttemperatur Tagesmittel"])
+    stdTempDecade = np.std(dfVorVortagSnow["Lufttemperatur Tagesmittel"])
+    VerteilungTempVorvortag = norm(meanTempDecade, stdTempDecade)
+    VerteilungTempVorvortag = round(VerteilungTempVorvortag.cdf(4), 4)
+    print("An", round(VerteilungTempVorvortag*100, 2), "% des zweiten Tages vor dem Schneefall war die Temperatur unter 4.0 Grad.")
+    print("Diese Temperatur wurde an", round(len(dfDez.loc[dfDez['Lufttemperatur Tagesmittel'] <= 4.0])  / len(dfDez['Lufttemperatur Tagesmittel']), 2) * 100, "% der beobachteten Tage im Dezember unterschritten.")
+    # Regressionsanalyse Temperatur Vortag zu Temperatur Dezember
+    print("Regressionsanalyse nicht möglich, da für Temperatur vor Schneefall im Dezember und Temperatur im Dezember ungleich viele Beobachtungen vorhanden sind.")
+    # Hypothesentest Temperatur Vortag
+    meanTempDez = np.mean(dfDezforDays["Lufttemperatur Tagesmittel"])
+    result = ztest(dfDezforDays["Lufttemperatur Tagesmittel"], dfVortagSnow["Lufttemperatur Tagesmittel"], value=0)
+    print(result)
+    Vortage[Region[0]] = [TageTemperatur, TageSchneefall, WahrscheinlichkeitTempSchneeFolgetag, WahrscheinlichkeitTempSchneezweiterFolgetag, WahrscheinlichkeitNiedersSchneeFolgetag, WahrscheinlichkeitNiedersSchneezweiterFolgetag, result[1], round(meanTempbeforeSnow, 2), round(meanTempDez, 2)]
+    # Hypothesentest Temperatur Vorvortag
+    result = ztest(dfDezforDays["Lufttemperatur Tagesmittel"], dfVorVortagSnow["Lufttemperatur Tagesmittel"], value=0)
+    print(result)
 
 
 
