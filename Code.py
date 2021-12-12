@@ -15,8 +15,8 @@ HypothesisDecade = 2010
 
 
 #Regionen CSV Daten
-regionsCsvData = [["Basel.csv", ";",1860]]
-# regionsCsvData = [["Basel.csv", ";",1860], ["Meiringen.csv", ";",1958], ["SilsMaria.csv", ";",1900], ["StBernard.csv", ";",1860], ["Säntis.csv", ";",1900]] #Meiringen war 1860
+# regionsCsvData = [["Basel.csv", ";",1860]]
+regionsCsvData = [["Basel.csv", ";",1860], ["Meiringen.csv", ";",1958], ["SilsMaria.csv", ";",1900], ["StBernard.csv", ";",1860], ["Säntis.csv", ";",1900]] #Meiringen war 1860
 Vortage = pd.DataFrame(index=['Tage mit Temperatur für Schnee', 'Tage mit Schneefall am Folgetag', 'Temperatur Wahrscheinlichkeit Folgetag', 'Temperatur Wahrscheinlichkeit zweiter Folgetag', 'Niederschlag Wahrscheinlichkeit Folgetag', 'Niederschlag Wahrscheinlichkeit zweiter Folgetag', 'P-Wert Vergleich Temp Vortag', 'Temperatur vor Schneefall', 'Temperatur Dezember'])
 
 
